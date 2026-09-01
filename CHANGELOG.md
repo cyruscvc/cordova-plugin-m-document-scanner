@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Fix MABS 12 iOS generation by declaring the concrete Swift language version `5`.
+- Remove the unresolved `SWIFT_VERSION` plugin variable that caused `OS-MABS-GEN-40014`.
+
 ## 1.0.0
 
 - Add one cross-platform Cordova scanner API.
