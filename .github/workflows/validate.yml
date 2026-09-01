@@ -20,11 +20,13 @@ jobs:
       - name: Validate source metadata
         run: python3 scripts/validate_plugin.py .
       - name: Package OutSystems Resource
-        run: python3 scripts/package_outsystems.py . --output ../cordova-plugin-m-document-scanner.zip
+        run: |
+          mkdir -p dist
+          python3 scripts/package_outsystems.py . --output dist/cordova-plugin-m-document-scanner.zip
       - name: Validate packaged Resource
-        run: python3 scripts/validate_plugin.py ../cordova-plugin-m-document-scanner.zip
+        run: python3 scripts/validate_plugin.py dist/cordova-plugin-m-document-scanner.zip
       - uses: actions/upload-artifact@v4
         with:
           name: cordova-plugin-m-document-scanner
-          path: ../cordova-plugin-m-document-scanner.zip
+          path: dist/cordova-plugin-m-document-scanner.zip
           if-no-files-found: error
