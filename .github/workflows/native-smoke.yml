@@ -44,6 +44,7 @@ jobs:
           cd ../smoke
           cordova platform add ios@7.1.1
           cordova plugin add ../cordova-plugin-m-document-scanner
+          cordova prepare ios
       - name: Compile iOS simulator app
         working-directory: ../smoke/platforms/ios
         run: |
