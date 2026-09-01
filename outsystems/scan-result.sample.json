@@ -1,0 +1,22 @@
+{
+  "status": "success",
+  "platform": "android",
+  "engine": "mlkit-document-scanner",
+  "sessionId": "4a54a63e-dc6a-4fd9-82df-c4d60072040b",
+  "pageCount": 1,
+  "pages": [
+    {
+      "index": 0,
+      "uri": "file:///data/user/0/app/cache/m-document-scanner/session/page-001.jpg",
+      "mimeType": "image/jpeg",
+      "width": 3024,
+      "height": 4032
+    }
+  ],
+  "pdf": {
+    "uri": "file:///data/user/0/app/cache/m-document-scanner/session/document.pdf",
+    "mimeType": "application/pdf",
+    "pageCount": 1
+  },
+  "uiPageLimitEnforced": true
+}

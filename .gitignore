@@ -1,0 +1,10 @@
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/
+*.zip
+.DS_Store
+platforms/
+plugins/
+www/cordova.js

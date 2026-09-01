@@ -1,0 +1,36 @@
+{
+  "name": "cordova-plugin-m-document-scanner",
+  "version": "1.0.0",
+  "description": "Production document scanning for OutSystems 11 using VisionKit/Vision on iOS and ML Kit on Android.",
+  "cordova": {
+    "id": "cordova-plugin-m-document-scanner",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyruscvc/cordova-plugin-m-document-scanner.git"
+  },
+  "keywords": [
+    "cordova",
+    "outsystems",
+    "ecosystem:cordova",
+    "document-scanner",
+    "visionkit",
+    "vision",
+    "ml-kit"
+  ],
+  "engines": {
+    "cordovaDependencies": {
+      "cordova-android": ">=12.0.0",
+      "cordova-ios": ">=7.0.0"
+    }
+  },
+  "author": "Cyrus Vance Cunanan",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

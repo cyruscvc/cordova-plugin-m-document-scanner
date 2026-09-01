@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-m-document-scanner"
+        version="1.0.0">
+  <name>MDocumentScanner</name>
+  <description>Production document scanning for OutSystems 11 on iOS and Android.</description>
+  <license>MIT</license>
+  <keywords>cordova,outsystems,document,scanner,visionkit,vision,mlkit</keywords>
+
+  <engines>
+    <engine name="cordova-android" version=">=12.0.0" />
+    <engine name="cordova-ios" version=">=7.0.0" />
+  </engines>
+
+  <js-module src="www/MDocumentScanner.js" name="MDocumentScanner">
+    <clobbers target="cordova.plugins.mDocumentScanner" />
+  </js-module>
+  <js-module src="www/options.js" name="MDocumentScannerOptions">
+    <runs />
+  </js-module>
+
+  <platform name="android">
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="MDocumentScanner">
+        <param name="android-package" value="com.mubadala.documentscanner.MDocumentScanner" />
+      </feature>
+    </config-file>
+    <source-file src="src/android/MDocumentScanner.java" target-dir="src/com/mubadala/documentscanner" />
+    <preference name="MLKIT_DOCUMENT_SCANNER_VERSION" default="16.0.0" />
+    <framework src="com.google.android.gms:play-services-mlkit-document-scanner:$MLKIT_DOCUMENT_SCANNER_VERSION" />
+  </platform>
+
+  <platform name="ios">
+    <preference name="SwiftVersion" value="5.0" />
+    <preference name="CAMERA_USAGE_DESCRIPTION" default="Scan documents using the camera." />
+    <preference name="PHOTOLIBRARY_USAGE_DESCRIPTION" default="Select a document image from the photo library." />
+    <config-file target="config.xml" parent="/*">
+      <feature name="MDocumentScanner">
+        <param name="ios-package" value="MDocumentScanner" />
+      </feature>
+    </config-file>
+    <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
+      <string>$CAMERA_USAGE_DESCRIPTION</string>
+    </config-file>
+    <config-file target="*-Info.plist" parent="NSPhotoLibraryUsageDescription">
+      <string>$PHOTOLIBRARY_USAGE_DESCRIPTION</string>
+    </config-file>
+    <source-file src="src/ios/MDocumentScanner.swift" />
+    <source-file src="src/ios/MDSinglePageScannerViewController.swift" />
+    <source-file src="src/ios/MDScannerFileStore.swift" />
+    <framework src="AVFoundation.framework" />
+    <framework src="CoreImage.framework" />
+    <framework src="Vision.framework" />
+    <framework src="VisionKit.framework" weak="true" />
+  </platform>
+</plugin>

@@ -1,0 +1,49 @@
+name: Native smoke builds
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Install Cordova matching MABS 12
+        run: npm install --global cordova@12
+      - name: Create Android smoke app
+        run: |
+          cordova create ../smoke com.example.documentscannersmoke ScannerSmoke
+          cd ../smoke
+          cordova platform add android@13
+          cordova plugin add ../cordova-plugin-m-document-scanner
+      - name: Compile Android debug APK
+        working-directory: ../smoke
+        run: cordova build android --debug -- --packageType=apk
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cordova matching MABS 12
+        run: npm install --global cordova@12
+      - name: Create iOS smoke app
+        run: |
+          cordova create ../smoke com.example.documentscannersmoke ScannerSmoke
+          cd ../smoke
+          cordova platform add ios@7.1.1
+          cordova plugin add ../cordova-plugin-m-document-scanner
+      - name: Compile iOS simulator app
+        working-directory: ../smoke
+        run: cordova build ios --debug -- --sdk=iphonesimulator --buildFlag="CODE_SIGNING_ALLOWED=NO"

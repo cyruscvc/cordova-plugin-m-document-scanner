@@ -1,0 +1,16 @@
+{
+  "resource": "cordova-plugin-m-document-scanner.zip",
+  "plugin": {
+    "resource": "cordova-plugin-m-document-scanner",
+    "variables": [
+      {
+        "name": "CAMERA_USAGE_DESCRIPTION",
+        "value": "Scan receipts, business cards, and documents."
+      },
+      {
+        "name": "PHOTOLIBRARY_USAGE_DESCRIPTION",
+        "value": "Select a document image from your photo library."
+      }
+    ]
+  }
+}
