@@ -45,5 +45,13 @@ jobs:
           cordova platform add ios@7.1.1
           cordova plugin add ../cordova-plugin-m-document-scanner
       - name: Compile iOS simulator app
-        working-directory: ../smoke
-        run: cordova build ios --debug -- --sdk=iphonesimulator --buildFlag="CODE_SIGNING_ALLOWED=NO"
+        working-directory: ../smoke/platforms/ios
+        run: |
+          xcodebuild \
+            -workspace ScannerSmoke.xcworkspace \
+            -scheme ScannerSmoke \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
