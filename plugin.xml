@@ -32,10 +32,11 @@
   </platform>
 
   <platform name="ios">
-    <preference name="SwiftVersion" default="5.0" />
+    <preference name="SWIFT_VERSION" default="5.0" />
     <preference name="CAMERA_USAGE_DESCRIPTION" default="Scan documents using the camera." />
     <preference name="PHOTOLIBRARY_USAGE_DESCRIPTION" default="Select a document image from the photo library." />
     <config-file target="config.xml" parent="/*">
+      <preference name="SwiftVersion" value="$SWIFT_VERSION" />
       <feature name="MDocumentScanner">
         <param name="ios-package" value="MDocumentScanner" />
       </feature>
