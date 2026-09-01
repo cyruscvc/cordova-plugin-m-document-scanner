@@ -75,7 +75,12 @@ final class MDSinglePageScannerViewController: UIViewController {
     private let reviewImageView = UIImageView()
     private let retakeButton = UIButton(type: .system)
     private let useButton = UIButton(type: .system)
-    private let activityIndicator = UIActivityIndicatorView(style: .large)
+    private lazy var activityIndicator: UIActivityIndicatorView = {
+        if #available(iOS 13.0, *) {
+            return UIActivityIndicatorView(style: .large)
+        }
+        return UIActivityIndicatorView(style: .whiteLarge)
+    }()
 
     private var cameraDevice: AVCaptureDevice?
     private var currentImage: UIImage?
@@ -378,7 +383,9 @@ final class MDSinglePageScannerViewController: UIViewController {
         captureButton.isEnabled = false
 
         let settings = AVCapturePhotoSettings()
-        settings.photoQualityPrioritization = .quality
+        if #available(iOS 13.0, *) {
+            settings.photoQualityPrioritization = .quality
+        }
         photoOutput.capturePhoto(with: settings, delegate: self)
     }
 
