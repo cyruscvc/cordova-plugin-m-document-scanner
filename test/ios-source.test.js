@@ -44,3 +44,9 @@ test('camera configuration is committed before the capture session starts', func
     assert.ok(commitIndex < startIndex, 'commitConfiguration must precede startRunning');
     assert.doesNotMatch(configureCamera, /defer\s*\{[^}]*commitConfiguration/);
 });
+
+test('iOS loading indicator remains compatible with pre-iOS 13 deployment targets', () => {
+  assert.match(scannerSource, /if #available\(iOS 13\.0, \*\)/);
+  assert.match(scannerSource, /UIActivityIndicatorView\(style: \.large\)/);
+  assert.match(scannerSource, /UIActivityIndicatorView\(style: \.whiteLarge\)/);
+});

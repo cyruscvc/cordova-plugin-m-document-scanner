@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.5
+
+- Keep the iOS activity indicator compatible with deployment targets below iOS 13.
+- Preserve the iOS camera-session lifecycle fix introduced in 1.0.4.
+
 ## 1.0.4
 
 - Fix an iOS runtime crash when opening the single-page scanner.
