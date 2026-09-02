@@ -26,8 +26,8 @@ final class MDWCaptureSession {
     /// The orientation of the captured image
     var editImageOrientation: CGImagePropertyOrientation
 
-    /// Number of matching detections required before automatic capture.
-    var autoScanThreshold: Int
+    /// Required elapsed stability time before automatic capture.
+    var autoScanStabilityDuration: TimeInterval
 
     /// Vision rectangle confidence configured by the Cordova invocation.
     var detectionConfidence: Float
@@ -38,7 +38,7 @@ final class MDWCaptureSession {
     private init(
         isAutoScanEnabled: Bool = true,
         editImageOrientation: CGImagePropertyOrientation = .up,
-        autoScanThreshold: Int = 36,
+        autoScanStabilityDuration: TimeInterval = 1.2,
         detectionConfidence: Float = 0.8,
         minDocumentArea: CGFloat = 0.2
     ) {
@@ -47,7 +47,7 @@ final class MDWCaptureSession {
         self.isEditing = false
         self.isAutoScanEnabled = isAutoScanEnabled
         self.editImageOrientation = editImageOrientation
-        self.autoScanThreshold = autoScanThreshold
+        self.autoScanStabilityDuration = autoScanStabilityDuration
         self.detectionConfidence = detectionConfidence
         self.minDocumentArea = minDocumentArea
     }

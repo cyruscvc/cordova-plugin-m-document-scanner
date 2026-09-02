@@ -65,11 +65,9 @@ public final class MDWImageScannerController: UINavigationController {
 
         self.imageScannerDelegate = delegate
 
-        if #available(iOS 13.0, *) {
-            navigationBar.tintColor = .label
-        } else {
-            navigationBar.tintColor = .black
-        }
+        // The scanner navigation bar is always black. Semantic `.label` becomes
+        // black in light mode and makes actionable bar buttons invisible.
+        navigationBar.tintColor = .white
         navigationBar.isTranslucent = false
         if #available(iOS 13.0, *) {
             let appearance = UINavigationBarAppearance()

@@ -94,10 +94,8 @@ final class MDocumentScanner: CDVPlugin {
                 if options.captureMode == "single" {
                     self.activeEngine = "wescan"
                     MDWCaptureSession.current.isAutoScanEnabled = options.autoCapture
-                    MDWCaptureSession.current.autoScanThreshold = min(
-                        150,
-                        max(8, Int((options.stabilityDuration * 30).rounded()))
-                    )
+                    MDWCaptureSession.current.autoScanStabilityDuration =
+                        options.stabilityDuration
                     MDWCaptureSession.current.detectionConfidence =
                         options.detectionConfidence
                     MDWCaptureSession.current.minDocumentArea =

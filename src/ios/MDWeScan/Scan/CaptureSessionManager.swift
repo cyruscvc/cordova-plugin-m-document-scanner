@@ -69,11 +69,10 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
     /// Whether the MDWCaptureSessionManager should be detecting quadrilaterals.
     private var isDetecting = true
 
-    /// The number of times no rectangles have been found in a row.
-    private var noRectangleCount = 0
-
-    /// The minimum number of time required by `noRectangleCount` to validate that no rectangles have been found.
-    private let noRectangleThreshold = 3
+    /// Brief Vision misses should pause feedback rather than restarting a valid hold.
+    private var lastDetectedAt: TimeInterval?
+    private var didResetAfterDetectionLoss = false
+    private let detectionLossGraceDuration: TimeInterval = 0.45
 
     // MARK: Life Cycle
 
@@ -230,7 +229,8 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
     private func processRectangle(rectangle: MDWQuadrilateral?, imageSize: CGSize) {
         if let rectangle = rectangle {
 
-            self.noRectangleCount = 0
+            self.lastDetectedAt = ProcessInfo.processInfo.systemUptime
+            self.didResetAfterDetectionLoss = false
             self.rectangleFunnel
                 .add(rectangle, currentlyDisplayedRectangle: self.displayedRectangleResult?.rectangle) { [weak self] result, rectangle, progress in
 
@@ -253,25 +253,34 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
             }
 
         } else {
+            let now = ProcessInfo.processInfo.systemUptime
+            if self.lastDetectedAt == nil {
+                self.lastDetectedAt = now
+            }
+
+            guard !self.didResetAfterDetectionLoss,
+                  let lastDetectedAt = self.lastDetectedAt,
+                  now - lastDetectedAt >= self.detectionLossGraceDuration else {
+                return
+            }
+
+            self.didResetAfterDetectionLoss = true
+            self.rectangleFunnel.resetAutoScanProgress()
+            self.displayedRectangleResult = nil
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     return
                 }
-                self.noRectangleCount += 1
-
-                if self.noRectangleCount > self.noRectangleThreshold {
-                    // Restart stability the next time a rectangle is found.
-                    self.rectangleFunnel.resetAutoScanProgress()
-                    self.delegate?.captureSessionManager(
-                        self,
-                        didUpdateAutoScanProgress: 0.0
-                    )
-
-                    // Remove the currently displayed rectangle as no rectangles are being found anymore
-                    self.displayedRectangleResult = nil
-                    self.delegate?.captureSessionManager(self, didDetectQuad: nil, imageSize)
-                }
+                self.delegate?.captureSessionManager(
+                    self,
+                    didUpdateAutoScanProgress: 0.0
+                )
+                self.delegate?.captureSessionManager(
+                    self,
+                    didDetectQuad: nil,
+                    imageSize
+                )
             }
             return
 

@@ -63,15 +63,14 @@ final class MDWRectangleFeaturesFunnel {
     /// The minumum number of matching rectangles (within the `rectangle` queue), to be confident enough to display a rectangle.
     let minNumberOfMatches = 3
 
-    /// The number of similar rectangles that need to be found to auto scan.
-    var autoScanThreshold: Int { MDWCaptureSession.current.autoScanThreshold }
+    /// The actual elapsed time required before automatic capture.
+    var autoScanStabilityDuration: TimeInterval {
+        return MDWCaptureSession.current.autoScanStabilityDuration
+    }
 
-    /// The number of times the rectangle has passed the threshold to be auto-scanned.
-    private(set) var currentAutoScanPassCount = 0
-
-    /// The value in pixels used to determine if a rectangle is accurate enough to be auto scanned.
-    /// A higher value means the auto scan is quicker, but the rectangle will be less accurate. On the other hand, the lower the value, the longer it'll take for the auto scan, but it'll be way more accurate
-    var autoScanMatchingThreshold: CGFloat = 6.0
+    /// The anchor prevents small frame-to-frame changes from accumulating into large drift.
+    private var stabilityAnchor: MDWQuadrilateral?
+    private var stableSince: TimeInterval?
 
     /// Add a rectangle to the funnel, and if a new rectangle should be displayed, the completion block will be called.
     /// The algorithm works the following way:
@@ -80,7 +79,7 @@ final class MDWRectangleFeaturesFunnel {
     /// 3. Compares all of the recently added rectangles to find out which one match each other
     /// 4. Within all of the recently added rectangles, finds the "best" one (@see `bestRectangle(withCurrentlyDisplayedRectangle:)`)
     /// 5. If the best rectangle is different than the currently displayed rectangle, informs the listener that a new rectangle should be displayed
-    ///     5a. The currentAutoScanPassCount is incremented every time a new rectangle is displayed. If it passes the autoScanThreshold, we tell the listener to scan the document.
+    ///     5a. A monotonic timer advances while the candidate remains close to the stability anchor.
     /// - Parameters:
     ///   - rectangleFeature: The rectangle to feed to the funnel.
     ///   - currentRectangle: The currently displayed rectangle. This is used to avoid displaying very close rectangles.
@@ -107,29 +106,51 @@ final class MDWRectangleFeaturesFunnel {
             return
         }
 
-        if let previousRectangle = currentRectangle,
-            bestRectangle.rectangleFeature.mdwIsWithin(autoScanMatchingThreshold, ofRectangleFeature: previousRectangle) {
-            currentAutoScanPassCount += 1
-            let threshold = max(1, autoScanThreshold)
-            let progress = min(
-                1.0,
-                CGFloat(currentAutoScanPassCount) / CGFloat(threshold)
-            )
-            if currentAutoScanPassCount > autoScanThreshold {
-                completion(MDWAddResult.showAndAutoScan, bestRectangle.rectangleFeature, 1.0)
-                resetAutoScanProgress()
-            } else {
-                completion(MDWAddResult.showOnly, bestRectangle.rectangleFeature, progress)
-            }
-        } else {
-            // A changed quadrilateral is a new stability attempt, not accumulated progress.
+        let candidate = bestRectangle.rectangleFeature
+        let now = ProcessInfo.processInfo.systemUptime
+
+        guard let anchor = stabilityAnchor,
+              let startedAt = stableSince else {
+            beginStabilityAttempt(with: candidate, at: now)
+            completion(MDWAddResult.showOnly, candidate, 0.0)
+            return
+        }
+
+        let tolerance = matchingTolerance(for: anchor)
+        guard candidate.mdwIsWithin(tolerance, ofRectangleFeature: anchor) else {
+            beginStabilityAttempt(with: candidate, at: now)
+            completion(MDWAddResult.showOnly, candidate, 0.0)
+            return
+        }
+
+        let duration = max(0.5, autoScanStabilityDuration)
+        let elapsed = max(0.0, now - startedAt)
+        let progress = min(1.0, CGFloat(elapsed / duration))
+
+        if progress >= 1.0 {
+            completion(MDWAddResult.showAndAutoScan, candidate, 1.0)
             resetAutoScanProgress()
-            completion(MDWAddResult.showOnly, bestRectangle.rectangleFeature, 0.0)
+        } else {
+            completion(MDWAddResult.showOnly, candidate, progress)
         }
     }
 
     func resetAutoScanProgress() {
-        currentAutoScanPassCount = 0
+        stabilityAnchor = nil
+        stableSince = nil
+    }
+
+    private func beginStabilityAttempt(
+        with quadrilateral: MDWQuadrilateral,
+        at timestamp: TimeInterval
+    ) {
+        stabilityAnchor = quadrilateral
+        stableSince = timestamp
+    }
+
+    private func matchingTolerance(for quadrilateral: MDWQuadrilateral) -> CGFloat {
+        let averageEdgeLength = CGFloat(quadrilateral.perimeter / 4.0)
+        return min(42.0, max(18.0, averageEdgeLength * 0.03))
     }
 
     /// Determines which rectangle is best to displayed.

@@ -48,7 +48,14 @@ final class MDWReviewViewController: UIViewController {
 
     private lazy var doneButton: UIBarButtonItem = {
         let button = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(finishScan))
-        button.tintColor = navigationController?.navigationBar.tintColor
+        button.tintColor = .white
+        button.accessibilityLabel = NSLocalizedString(
+            "wescan.review.button.done",
+            tableName: nil,
+            bundle: Bundle(for: MDWReviewViewController.self),
+            value: "Done",
+            comment: "Finish the document scan"
+        )
         return button
     }()
 

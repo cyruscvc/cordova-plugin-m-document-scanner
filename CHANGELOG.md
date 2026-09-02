@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1
+
+- Make iOS auto-capture stability use real elapsed time instead of an assumed 30 detection frames per second.
+- Tolerate normal Vision corner jitter and brief detection gaps without constantly restarting the stability grid.
+- Keep a fixed stability anchor so gradual camera movement cannot accumulate into a false capture.
+- Keep scanner navigation controls explicitly white on the black bar, fixing the invisible but tappable final Done control in light mode.
+- No Android, JavaScript bridge, OutSystems action, URI, OCR, or result-contract changes.
+
 ## 1.2.0
 
 - Use Mubadala teal (`#7AC4BD`) for the iOS live document outline and detected-area overlay.
