@@ -77,7 +77,7 @@ extension UIImage {
         let image = mdwScaledImage(mdwScaleFactor: size.mdwScaleFactor(forMaxWidth: imageMaxWidth, maxHeight: imageMaxHeight)) ?? self
         let renderer = UIGraphicsPDFRenderer(bounds: pageBounds)
 
-        let data = renderer.mdwPdfData { ctx in
+        let data = renderer.pdfData { ctx in
             ctx.beginPage()
 
             ctx.cgContext.interpolationQuality = .high
