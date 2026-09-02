@@ -79,6 +79,7 @@ final class MDocumentScanner: CDVPlugin {
     private var activeCallbackId: String?
     private var activeOptions: MDScanOptions?
     private var activeEngine = ""
+    private var activeSinglePageScanner: MDWImageScannerController?
 
     @objc(scan:)
     func scan(_ command: CDVInvokedUrlCommand) {
@@ -91,17 +92,38 @@ final class MDocumentScanner: CDVPlugin {
                 self.activeOptions = options
 
                 if options.captureMode == "single" {
-                    self.activeEngine = "vision-single-page"
-                    let scannerOptions = MDSinglePageScannerOptions(
-                        allowGallery: options.allowGallery,
-                        autoCapture: options.autoCapture,
-                        stabilityDuration: options.stabilityDuration,
-                        detectionConfidence: options.detectionConfidence,
-                        minDocumentArea: options.minDocumentArea
+                    self.activeEngine = "wescan"
+                    MDWCaptureSession.current.isAutoScanEnabled = options.autoCapture
+                    MDWCaptureSession.current.autoScanThreshold = min(
+                        150,
+                        max(8, Int((options.stabilityDuration * 30).rounded()))
                     )
-                    let scanner = MDSinglePageScannerViewController(options: scannerOptions)
-                    scanner.scannerDelegate = self
+                    MDWCaptureSession.current.detectionConfidence =
+                        options.detectionConfidence
+                    MDWCaptureSession.current.minDocumentArea =
+                        options.minDocumentArea
+
+                    let scanner = MDWImageScannerController(delegate: self)
                     scanner.modalPresentationStyle = .fullScreen
+                    self.activeSinglePageScanner = scanner
+
+                    scanner.loadViewIfNeeded()
+                    if options.allowGallery,
+                       let navigationItem = scanner.topViewController?.navigationItem {
+                        let gallery = UIBarButtonItem(
+                            title: "Photos",
+                            style: .plain,
+                            target: self,
+                            action: #selector(self.openSinglePageGallery)
+                        )
+                        gallery.accessibilityLabel = "Choose document from photos"
+                        var items = [gallery]
+                        if let existing = navigationItem.rightBarButtonItem {
+                            items.append(existing)
+                        }
+                        navigationItem.rightBarButtonItems = items
+                    }
+
                     self.topViewController().present(scanner, animated: true)
                 } else {
                     guard #available(iOS 13.0, *), VNDocumentCameraViewController.isSupported else {
@@ -120,12 +142,24 @@ final class MDocumentScanner: CDVPlugin {
         }
     }
 
+    @objc private func openSinglePageGallery() {
+        guard let scanner = activeSinglePageScanner,
+              UIImagePickerController.isSourceTypeAvailable(.photoLibrary) else {
+            return
+        }
+        let picker = UIImagePickerController()
+        picker.sourceType = .photoLibrary
+        picker.delegate = self
+        picker.modalPresentationStyle = .fullScreen
+        scanner.present(picker, animated: true)
+    }
+
     @objc(getCapabilities:)
     func getCapabilities(_ command: CDVInvokedUrlCommand) {
         let result: [String: Any] = [
             "available": UIImagePickerController.isSourceTypeAvailable(.camera),
             "platform": "ios",
-            "singlePageEngine": "vision-single-page",
+            "singlePageEngine": "wescan",
             "multiPageEngine": "visionkit",
             "singlePageAutoStop": true,
             "multiPage": true,
@@ -197,7 +231,7 @@ final class MDocumentScanner: CDVPlugin {
             "pageCount": 0,
             "pages": [],
             "pdf": NSNull(),
-            "uiPageLimitEnforced": engine == "vision-single-page"
+            "uiPageLimitEnforced": engine == "wescan"
         ], callbackId: callbackId)
     }
 
@@ -211,6 +245,7 @@ final class MDocumentScanner: CDVPlugin {
         activeCallbackId = nil
         activeOptions = nil
         activeEngine = ""
+        activeSinglePageScanner = nil
     }
 
     private func topViewController() -> UIViewController {
@@ -242,23 +277,56 @@ final class MDocumentScanner: CDVPlugin {
     }
 }
 
-extension MDocumentScanner: MDSinglePageScannerDelegate {
-    func singlePageScanner(_ scanner: MDSinglePageScannerViewController, didFinish image: UIImage) {
+extension MDocumentScanner: MDWImageScannerControllerDelegate {
+    func imageScannerController(
+        _ scanner: MDWImageScannerController,
+        didFinishScanningWithResults results: MDWImageScannerResults
+    ) {
+        let image: UIImage
+        if results.doesUserPreferEnhancedScan, let enhanced = results.enhancedScan {
+            image = enhanced.image
+        } else {
+            image = results.croppedScan.image
+        }
         scanner.dismiss(animated: true) { [weak self] in
             self?.complete(images: [image], uiPageLimitEnforced: true)
         }
     }
 
-    func singlePageScannerDidCancel(_ scanner: MDSinglePageScannerViewController) {
+    func imageScannerControllerDidCancel(_ scanner: MDWImageScannerController) {
         scanner.dismiss(animated: true) { [weak self] in
             self?.completeCancelled()
         }
     }
 
-    func singlePageScanner(_ scanner: MDSinglePageScannerViewController, didFail error: Error) {
+    func imageScannerController(
+        _ scanner: MDWImageScannerController,
+        didFailWithError error: Error
+    ) {
         scanner.dismiss(animated: true) { [weak self] in
             self?.completeError(error)
         }
+    }
+}
+
+extension MDocumentScanner: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    func imagePickerController(
+        _ picker: UIImagePickerController,
+        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+    ) {
+        guard let image = info[.originalImage] as? UIImage,
+              let scanner = activeSinglePageScanner else {
+            picker.dismiss(animated: true)
+            return
+        }
+        let prepared = image.mdwPreparedImage(maxDimension: 3500)
+        picker.dismiss(animated: true) {
+            scanner.useImage(image: prepared)
+        }
+    }
+
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
     }
 }
 

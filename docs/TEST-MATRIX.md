@@ -12,7 +12,7 @@ Complete this matrix against the exact MABS build before production rollout.
 
 ## iOS devices
 
-- [ ] Current supported iPhone: single-page auto capture, manual capture, retake, use, cancel.
+- [ ] Current supported iPhone: single-page auto capture, manual capture, corner editing, enhancement, retake, use, cancel.
 - [ ] iPad portrait: controls and safe areas render correctly.
 - [ ] Gallery selection returns one corrected image.
 - [ ] Camera denied/restricted returns one error and no frozen overlay.

@@ -5,43 +5,67 @@ var assert = require('node:assert/strict');
 var fs = require('node:fs');
 var path = require('node:path');
 
-var iosRoot = path.resolve(__dirname, '..', 'src', 'ios');
+var root = path.resolve(__dirname, '..');
+var iosRoot = path.join(root, 'src', 'ios');
+var pluginSource = fs.readFileSync(path.join(iosRoot, 'MDocumentScanner.swift'), 'utf8');
+var pluginXml = fs.readFileSync(path.join(root, 'plugin.xml'), 'utf8');
+var weScanRoot = path.join(iosRoot, 'MDWeScan');
+
+function swiftFiles(directory) {
+    return fs.readdirSync(directory, { withFileTypes: true }).flatMap(function (entry) {
+        var target = path.join(directory, entry.name);
+        return entry.isDirectory()
+            ? swiftFiles(target)
+            : entry.name.endsWith('.swift') ? [target] : [];
+    });
+}
 
 test('MABS controller traversal is explicitly typed as UIViewController', function () {
-    var source = fs.readFileSync(path.join(iosRoot, 'MDocumentScanner.swift'), 'utf8');
-
     assert.match(
-        source,
+        pluginSource,
         /var controller:\s*UIViewController\s*=\s*viewController!/
     );
 });
 
-test('single-page scanner uses deployment-safe activity indicator styles', function () {
-    var source = fs.readFileSync(
-        path.join(iosRoot, 'MDSinglePageScannerViewController.swift'),
-        'utf8'
-    );
-
-    assert.match(source, /if #available\(iOS 13\.0, \*\)/);
-    assert.match(source, /UIActivityIndicatorView\(style:\s*\.large\)/);
-    assert.match(source, /UIActivityIndicatorView\(style:\s*\.whiteLarge\)/);
+test('iOS single-page mode uses the namespaced WeScan engine', function () {
+    assert.match(pluginSource, /activeEngine\s*=\s*"wescan"/);
+    assert.match(pluginSource, /MDWImageScannerController\(delegate:\s*self\)/);
+    assert.match(pluginSource, /MDWCaptureSession\.current\.isAutoScanEnabled/);
+    assert.doesNotMatch(pluginXml, /MDSinglePageScannerViewController\.swift/);
 });
 
-test('camera configuration is committed before the capture session starts', function () {
-    var source = fs.readFileSync(
-        path.join(iosRoot, 'MDSinglePageScannerViewController.swift'),
+test('all vendored WeScan Swift sources are namespaced and declared', function () {
+    var files = swiftFiles(weScanRoot);
+    assert.ok(files.length >= 30);
+    files.forEach(function (file) {
+        var relative = path.relative(root, file).split(path.sep).join('/');
+        assert.match(pluginXml, new RegExp(
+            '<source-file src="' + relative.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&') + '"'
+        ));
+    });
+
+    var combined = files.map(function (file) {
+        return fs.readFileSync(file, 'utf8');
+    }).join('\n');
+    assert.match(combined, /MDWImageScannerController/);
+    assert.match(combined, /MDWRectangleFeaturesFunnel/);
+    assert.doesNotMatch(combined, /\bclass\s+ImageScannerController\b/);
+    assert.doesNotMatch(combined, /\bclass\s+CaptureSessionManager\b/);
+});
+
+test('iOS capture is bounded and uses supported photo prioritization', function () {
+    var manager = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'CaptureSessionManager.swift'),
         'utf8'
     );
-    var configureStart = source.indexOf('private func configureCamera()');
-    var configureEnd = source.indexOf('private func stopSession()', configureStart);
-    var configureCamera = source.slice(configureStart, configureEnd);
-    var commitIndex = configureCamera.indexOf('captureSession.commitConfiguration()');
-    var startIndex = configureCamera.indexOf('captureSession.startRunning()');
+    assert.match(manager, /mdwDownsampledImage\(data:\s*imageData,\s*maxDimension:\s*3500\)/);
+    assert.match(manager, /maxPhotoQualityPrioritization\s*=\s*\.balanced/);
+    assert.match(manager, /photoQualityPrioritization\s*=\s*\.balanced/);
+    assert.doesNotMatch(manager, /photoQualityPrioritization\s*=\s*\.quality/);
+});
 
-    assert.notEqual(configureStart, -1);
-    assert.notEqual(configureEnd, -1);
-    assert.notEqual(commitIndex, -1);
-    assert.notEqual(startIndex, -1);
-    assert.ok(commitIndex < startIndex, 'commitConfiguration must precede startRunning');
-    assert.doesNotMatch(configureCamera, /defer\s*\{[^}]*commitConfiguration/);
+test('iOS gallery and OCR-compatible URI contract remain available', function () {
+    assert.match(pluginSource, /UIImagePickerControllerDelegate/);
+    assert.match(pluginSource, /mdwPreparedImage\(maxDimension:\s*3500\)/);
+    assert.match(pluginSource, /complete\(images:\s*\[image\],\s*uiPageLimitEnforced:\s*true\)/);
 });

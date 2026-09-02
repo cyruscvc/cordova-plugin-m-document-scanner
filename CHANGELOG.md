@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Replace the custom iOS single-page camera with a maintained, namespaced WeScan fork.
+- Add stable multi-frame edge detection, automatic capture, manual corner editing, review, rotation, and enhancement.
+- Keep Apple VisionKit for iOS multi-page scanning and Google ML Kit for Android.
+- Preserve the existing Cordova and OutSystems result contract for OCR consumers.
+- Downsample iOS captures to a 3500-pixel maximum dimension before editing to bound memory.
+- Vendor and namespace the MIT-licensed WeScan sources to avoid runtime downloads and native type collisions.
+
 ## 1.0.5
 
 - Keep the iOS activity indicator compatible with deployment targets below iOS 13.
