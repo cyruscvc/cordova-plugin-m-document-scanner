@@ -41,7 +41,7 @@ test('readFile sends a bounded scanner URI request to the native service', funct
         maxBytes: 1024
     });
 
-    assert.deepEqual(invocation, {
+    assert.deepEqual(JSON.parse(JSON.stringify(invocation)), {
         service: 'MDocumentScanner',
         action: 'readFile',
         args: [{
