@@ -138,6 +138,7 @@ public final class MDWScannerViewController: UIViewController {
         view.layer.addSublayer(videoPreviewLayer)
         quadView.translatesAutoresizingMaskIntoConstraints = false
         quadView.editable = false
+        quadView.configureForDocumentScanning()
         view.addSubview(quadView)
         view.addSubview(cancelButton)
         view.addSubview(shutterButton)
@@ -251,6 +252,7 @@ public final class MDWScannerViewController: UIViewController {
     @objc private func toggleAutoScan() {
         if MDWCaptureSession.current.isAutoScanEnabled {
             MDWCaptureSession.current.isAutoScanEnabled = false
+            quadView.updateAutoScanProgress(0.0, animated: false)
             autoScanButton.title = NSLocalizedString("wescan.scanning.manual", tableName: nil, bundle: Bundle(for: MDWScannerViewController.self), value: "Manual", comment: "The manual button state")
         } else {
             MDWCaptureSession.current.isAutoScanEnabled = true
@@ -298,6 +300,7 @@ extension MDWScannerViewController: MDWRectangleDetectionDelegateProtocol {
     }
 
     func didStartCapturingPicture(for captureSessionManager: MDWCaptureSessionManager) {
+        quadView.updateAutoScanProgress(0.0, animated: false)
         activityIndicator.startAnimating()
         captureSessionManager.stop()
         shutterButton.isUserInteractionEnabled = false
@@ -335,6 +338,16 @@ extension MDWScannerViewController: MDWRectangleDetectionDelegateProtocol {
         let transformedQuad = quad.applyTransforms(transforms)
 
         quadView.drawQuadrilateral(quad: transformedQuad, animated: true)
+    }
+
+    func captureSessionManager(
+        _ captureSessionManager: MDWCaptureSessionManager,
+        didUpdateAutoScanProgress progress: CGFloat
+    ) {
+        let visibleProgress = MDWCaptureSession.current.isAutoScanEnabled
+            ? progress
+            : 0.0
+        quadView.updateAutoScanProgress(visibleProgress, animated: true)
     }
 
 }

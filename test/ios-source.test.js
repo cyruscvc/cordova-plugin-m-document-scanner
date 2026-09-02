@@ -83,3 +83,33 @@ test('iOS gallery and OCR-compatible URI contract remain available', function ()
     assert.match(pluginSource, /mdwPreparedImage\(maxDimension:\s*3500\)/);
     assert.match(pluginSource, /complete\(images:\s*\[image\],\s*uiPageLimitEnforced:\s*true\)/);
 });
+
+test('iOS live detection uses branded stability feedback tied to auto capture', function () {
+    var quadView = fs.readFileSync(
+        path.join(weScanRoot, 'Common', 'QuadrilateralView.swift'),
+        'utf8'
+    );
+    var funnel = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'RectangleFeaturesFunnel.swift'),
+        'utf8'
+    );
+    var manager = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'CaptureSessionManager.swift'),
+        'utf8'
+    );
+    var scanner = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'ScannerViewController.swift'),
+        'utf8'
+    );
+
+    assert.match(quadView, /Mubadala teal used by the live document-detection overlay \(#7AC4BD\)/);
+    assert.match(quadView, /stabilityGridLayer/);
+    assert.match(quadView, /stabilityGridPath\(for quad:/);
+    assert.match(quadView, /func updateAutoScanProgress\(_ progress: CGFloat, animated: Bool\)/);
+    assert.match(funnel, /completion: \(MDWAddResult, MDWQuadrilateral, CGFloat\) -> Void/);
+    assert.match(funnel, /A changed quadrilateral is a new stability attempt/);
+    assert.match(manager, /didUpdateAutoScanProgress progress: CGFloat/);
+    assert.match(manager, /resetAutoScanProgress\(\)/);
+    assert.match(scanner, /configureForDocumentScanning\(\)/);
+    assert.match(scanner, /quadView\.updateAutoScanProgress\(visibleProgress, animated: true\)/);
+});

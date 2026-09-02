@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Use Mubadala teal (`#7AC4BD`) for the iOS live document outline and detected-area overlay.
+- Reveal a lightweight perspective grid as the detected quadrilateral approaches the automatic-capture stability threshold.
+- Reset the grid immediately when the document moves, detection is lost, or automatic capture is disabled.
+- Keep Android on Google ML Kit's native scanner UI; no Android, JavaScript bridge, OutSystems action, or result-contract changes.
+
 ## 1.1.1
 
 - Fixed iOS single-page crop handles not matching the quadrilateral shown during live capture.

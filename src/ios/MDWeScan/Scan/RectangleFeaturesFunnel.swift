@@ -66,8 +66,8 @@ final class MDWRectangleFeaturesFunnel {
     /// The number of similar rectangles that need to be found to auto scan.
     var autoScanThreshold: Int { MDWCaptureSession.current.autoScanThreshold }
 
-    /// The number of times the rectangle has passed the threshold to be auto-scanned
-    var currentAutoScanPassCount = 0
+    /// The number of times the rectangle has passed the threshold to be auto-scanned.
+    private(set) var currentAutoScanPassCount = 0
 
     /// The value in pixels used to determine if a rectangle is accurate enough to be auto scanned.
     /// A higher value means the auto scan is quicker, but the rectangle will be less accurate. On the other hand, the lower the value, the longer it'll take for the auto scan, but it'll be way more accurate
@@ -85,7 +85,11 @@ final class MDWRectangleFeaturesFunnel {
     ///   - rectangleFeature: The rectangle to feed to the funnel.
     ///   - currentRectangle: The currently displayed rectangle. This is used to avoid displaying very close rectangles.
     ///   - completion: The completion block called when a new rectangle should be displayed.
-    func add(_ rectangleFeature: MDWQuadrilateral, currentlyDisplayedRectangle currentRectangle: MDWQuadrilateral?, completion: (MDWAddResult, MDWQuadrilateral) -> Void) {
+    func add(
+        _ rectangleFeature: MDWQuadrilateral,
+        currentlyDisplayedRectangle currentRectangle: MDWQuadrilateral?,
+        completion: (MDWAddResult, MDWQuadrilateral, CGFloat) -> Void
+    ) {
         let rectangleMatch = RectangleMatch(rectangleFeature: rectangleFeature)
         rectangles.append(rectangleMatch)
 
@@ -106,13 +110,26 @@ final class MDWRectangleFeaturesFunnel {
         if let previousRectangle = currentRectangle,
             bestRectangle.rectangleFeature.mdwIsWithin(autoScanMatchingThreshold, ofRectangleFeature: previousRectangle) {
             currentAutoScanPassCount += 1
+            let threshold = max(1, autoScanThreshold)
+            let progress = min(
+                1.0,
+                CGFloat(currentAutoScanPassCount) / CGFloat(threshold)
+            )
             if currentAutoScanPassCount > autoScanThreshold {
-                currentAutoScanPassCount = 0
-                completion(MDWAddResult.showAndAutoScan, bestRectangle.rectangleFeature)
+                completion(MDWAddResult.showAndAutoScan, bestRectangle.rectangleFeature, 1.0)
+                resetAutoScanProgress()
+            } else {
+                completion(MDWAddResult.showOnly, bestRectangle.rectangleFeature, progress)
             }
         } else {
-            completion(MDWAddResult.showOnly, bestRectangle.rectangleFeature)
+            // A changed quadrilateral is a new stability attempt, not accumulated progress.
+            resetAutoScanProgress()
+            completion(MDWAddResult.showOnly, bestRectangle.rectangleFeature, 0.0)
         }
+    }
+
+    func resetAutoScanProgress() {
+        currentAutoScanPassCount = 0
     }
 
     /// Determines which rectangle is best to displayed.

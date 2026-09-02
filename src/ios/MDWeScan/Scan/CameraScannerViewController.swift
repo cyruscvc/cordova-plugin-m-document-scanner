@@ -77,6 +77,7 @@ public final class MDWCameraScannerViewController: UIViewController {
         view.layer.addSublayer(videoPreviewLayer)
         quadView.translatesAutoresizingMaskIntoConstraints = false
         quadView.editable = false
+        quadView.configureForDocumentScanning()
         view.addSubview(quadView)
         setupConstraints()
 
@@ -161,6 +162,9 @@ public final class MDWCameraScannerViewController: UIViewController {
 
     public func toggleAutoScan() {
         isAutoScanEnabled.toggle()
+        if !isAutoScanEnabled {
+            quadView.updateAutoScanProgress(0.0, animated: false)
+        }
     }
 }
 
@@ -170,6 +174,7 @@ extension MDWCameraScannerViewController: MDWRectangleDetectionDelegateProtocol 
     }
 
     func didStartCapturingPicture(for captureSessionManager: MDWCaptureSessionManager) {
+        quadView.updateAutoScanProgress(0.0, animated: false)
         captureSessionManager.stop()
     }
 
@@ -197,5 +202,13 @@ extension MDWCameraScannerViewController: MDWRectangleDetectionDelegateProtocol 
         let transforms = [mdwScaleTransform, rotationTransform, translationTransform]
         let transformedQuad = quad.applyTransforms(transforms)
         quadView.drawQuadrilateral(quad: transformedQuad, animated: true)
+    }
+
+    func captureSessionManager(
+        _ captureSessionManager: MDWCaptureSessionManager,
+        didUpdateAutoScanProgress progress: CGFloat
+    ) {
+        let visibleProgress = isAutoScanEnabled ? progress : 0.0
+        quadView.updateAutoScanProgress(visibleProgress, animated: true)
     }
 }

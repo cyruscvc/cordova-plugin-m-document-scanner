@@ -27,6 +27,13 @@ protocol MDWRectangleDetectionDelegateProtocol: NSObjectProtocol {
     ///   - imageSize: The size of the image the quadrilateral has been detected on.
     func captureSessionManager(_ captureSessionManager: MDWCaptureSessionManager, didDetectQuad quad: MDWQuadrilateral?, _ imageSize: CGSize)
 
+    /// Called as the current quadrilateral approaches the automatic-capture threshold.
+    /// Progress is reset to zero when detection is lost or the quadrilateral moves.
+    func captureSessionManager(
+        _ captureSessionManager: MDWCaptureSessionManager,
+        didUpdateAutoScanProgress progress: CGFloat
+    )
+
     /// Called when a picture with or without a quadrilateral has been captured.
     ///
     /// - Parameters:
@@ -225,15 +232,22 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
 
             self.noRectangleCount = 0
             self.rectangleFunnel
-                .add(rectangle, currentlyDisplayedRectangle: self.displayedRectangleResult?.rectangle) { [weak self] result, rectangle in
+                .add(rectangle, currentlyDisplayedRectangle: self.displayedRectangleResult?.rectangle) { [weak self] result, rectangle, progress in
 
                 guard let self = self else {
                     return
                 }
 
                 let shouldAutoScan = (result == .showAndAutoScan)
+                let autoScanEnabled = MDWCaptureSession.current.isAutoScanEnabled
                 self.displayRectangleResult(rectangleResult: MDWRectangleDetectorResult(rectangle: rectangle, imageSize: imageSize))
-                if shouldAutoScan, MDWCaptureSession.current.isAutoScanEnabled, !MDWCaptureSession.current.isEditing {
+                if autoScanEnabled {
+                    self.displayAutoScanProgress(progress)
+                } else {
+                    self.rectangleFunnel.resetAutoScanProgress()
+                    self.displayAutoScanProgress(0.0)
+                }
+                if shouldAutoScan, autoScanEnabled, !MDWCaptureSession.current.isEditing {
                     capturePhoto()
                 }
             }
@@ -247,8 +261,12 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
                 self.noRectangleCount += 1
 
                 if self.noRectangleCount > self.noRectangleThreshold {
-                    // Reset the currentAutoScanPassCount, so the threshold is restarted the next time a rectangle is found
-                    self.rectangleFunnel.currentAutoScanPassCount = 0
+                    // Restart stability the next time a rectangle is found.
+                    self.rectangleFunnel.resetAutoScanProgress()
+                    self.delegate?.captureSessionManager(
+                        self,
+                        didUpdateAutoScanProgress: 0.0
+                    )
 
                     // Remove the currently displayed rectangle as no rectangles are being found anymore
                     self.displayedRectangleResult = nil
@@ -276,6 +294,18 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
         return quad
     }
 
+    private func displayAutoScanProgress(_ progress: CGFloat) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else {
+                return
+            }
+            self.delegate?.captureSessionManager(
+                self,
+                didUpdateAutoScanProgress: progress
+            )
+        }
+    }
+
 }
 
 extension MDWCaptureSessionManager: AVCapturePhotoCaptureDelegate {
@@ -294,7 +324,7 @@ extension MDWCaptureSessionManager: AVCapturePhotoCaptureDelegate {
         }
 
         isDetecting = false
-        rectangleFunnel.currentAutoScanPassCount = 0
+        rectangleFunnel.resetAutoScanProgress()
         delegate?.didStartCapturingPicture(for: self)
 
         if let sampleBuffer = photoSampleBuffer,
@@ -319,7 +349,7 @@ extension MDWCaptureSessionManager: AVCapturePhotoCaptureDelegate {
         }
 
         isDetecting = false
-        rectangleFunnel.currentAutoScanPassCount = 0
+        rectangleFunnel.resetAutoScanProgress()
         delegate?.didStartCapturingPicture(for: self)
 
         if let imageData = photo.fileDataRepresentation() {
