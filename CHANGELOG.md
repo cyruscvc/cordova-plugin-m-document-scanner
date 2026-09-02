@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+- Fix an iOS runtime crash when opening the single-page scanner.
+- Commit the `AVCaptureSession` configuration before calling `startRunning()`.
+- Add a regression test that enforces safe camera-session lifecycle ordering.
+
+
 ## 1.0.3
 
 - Fix MABS 12 iOS compilation when Cordova exposes the plugin root controller as `CDVViewController`.

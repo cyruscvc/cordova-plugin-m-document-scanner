@@ -250,10 +250,6 @@ final class MDSinglePageScannerViewController: UIViewController {
     private func configureCamera() {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
-            self.captureSession.beginConfiguration()
-            self.captureSession.sessionPreset = .photo
-            defer { self.captureSession.commitConfiguration() }
-
             let discovery = AVCaptureDevice.DiscoverySession(
                 deviceTypes: [.builtInWideAngleCamera],
                 mediaType: .video,
@@ -271,6 +267,9 @@ final class MDSinglePageScannerViewController: UIViewController {
                       self.captureSession.canAddOutput(self.videoOutput) else {
                     throw MDSinglePageScannerError.cameraConfigurationFailed
                 }
+
+                self.captureSession.beginConfiguration()
+                self.captureSession.sessionPreset = .photo
                 self.captureSession.addInput(input)
                 self.captureSession.addOutput(self.photoOutput)
 
@@ -281,6 +280,8 @@ final class MDSinglePageScannerViewController: UIViewController {
                 ]
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.analysisQueue)
                 self.captureSession.addOutput(self.videoOutput)
+                self.captureSession.commitConfiguration()
+
                 self.cameraDevice = device
                 self.configured = true
                 self.captureSession.startRunning()
