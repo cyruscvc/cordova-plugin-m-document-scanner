@@ -29,7 +29,7 @@ final class MDWReviewViewController: UIViewController {
 
     private lazy var enhanceButton: UIBarButtonItem = {
         let image = UIImage(
-            systemName: "wand.and.rays.inverse",
+            mdwSystemName: "wand.and.rays.inverse",
             named: "enhance",
             in: Bundle(for: MDWScannerViewController.self),
             compatibleWith: nil
