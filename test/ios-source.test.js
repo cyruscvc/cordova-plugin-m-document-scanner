@@ -83,3 +83,59 @@ test('iOS gallery and OCR-compatible URI contract remain available', function ()
     assert.match(pluginSource, /mdwPreparedImage\(maxDimension:\s*3500\)/);
     assert.match(pluginSource, /complete\(images:\s*\[image\],\s*uiPageLimitEnforced:\s*true\)/);
 });
+
+test('iOS live detection uses branded stability feedback tied to auto capture', function () {
+    var quadView = fs.readFileSync(
+        path.join(weScanRoot, 'Common', 'QuadrilateralView.swift'),
+        'utf8'
+    );
+    var funnel = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'RectangleFeaturesFunnel.swift'),
+        'utf8'
+    );
+    var manager = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'CaptureSessionManager.swift'),
+        'utf8'
+    );
+    var scanner = fs.readFileSync(
+        path.join(weScanRoot, 'Scan', 'ScannerViewController.swift'),
+        'utf8'
+    );
+    var captureSession = fs.readFileSync(
+        path.join(weScanRoot, 'Session', 'CaptureSession.swift'),
+        'utf8'
+    );
+
+    assert.match(quadView, /Mubadala teal used by the live document-detection overlay \(#7AC4BD\)/);
+    assert.match(quadView, /stabilityGridLayer/);
+    assert.match(quadView, /stabilityGridPath\(for quad:/);
+    assert.match(quadView, /func updateAutoScanProgress\(_ progress: CGFloat, animated: Bool\)/);
+    assert.match(funnel, /completion: \(MDWAddResult, MDWQuadrilateral, CGFloat\) -> Void/);
+    assert.match(funnel, /ProcessInfo\.processInfo\.systemUptime/);
+    assert.match(funnel, /stabilityAnchor/);
+    assert.match(funnel, /matchingTolerance\(for quadrilateral:/);
+    assert.doesNotMatch(funnel, /currentAutoScanPassCount/);
+    assert.match(manager, /didUpdateAutoScanProgress progress: CGFloat/);
+    assert.match(manager, /detectionLossGraceDuration:\s*TimeInterval\s*=\s*0\.45/);
+    assert.match(manager, /resetAutoScanProgress\(\)/);
+    assert.match(captureSession, /autoScanStabilityDuration:\s*TimeInterval/);
+    assert.match(pluginSource, /autoScanStabilityDuration\s*=\s*\n\s*options\.stabilityDuration/);
+    assert.match(scanner, /configureForDocumentScanning\(\)/);
+    assert.match(scanner, /quadView\.updateAutoScanProgress\(visibleProgress, animated: true\)/);
+});
+
+test('iOS review actions stay visible on the black navigation bar', function () {
+    var controller = fs.readFileSync(
+        path.join(weScanRoot, 'ImageScannerController.swift'),
+        'utf8'
+    );
+    var review = fs.readFileSync(
+        path.join(weScanRoot, 'Review', 'ReviewViewController.swift'),
+        'utf8'
+    );
+
+    assert.match(controller, /navigationBar\.tintColor\s*=\s*\.white/);
+    assert.doesNotMatch(controller, /navigationBar\.tintColor\s*=\s*\.label/);
+    assert.match(review, /button\.tintColor\s*=\s*\.white/);
+    assert.match(review, /button\.accessibilityLabel\s*=\s*NSLocalizedString/);
+});

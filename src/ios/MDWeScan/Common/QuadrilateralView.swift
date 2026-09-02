@@ -21,6 +21,14 @@ enum MDWCornerPosition {
 /// The `MDWQuadrilateralView` is a simple `UIView` subclass that can draw a quadrilateral, and optionally edit it.
 final class MDWQuadrilateralView: UIView {
 
+    /// Mubadala teal used by the live document-detection overlay (#7AC4BD).
+    private static let scannerAccentColor = UIColor(
+        red: 122.0 / 255.0,
+        green: 196.0 / 255.0,
+        blue: 189.0 / 255.0,
+        alpha: 1.0
+    )
+
     private let quadLayer: CAShapeLayer = {
         let layer = CAShapeLayer()
         layer.strokeColor = UIColor.white.cgColor
@@ -30,6 +38,20 @@ final class MDWQuadrilateralView: UIView {
 
         return layer
     }()
+
+    /// A lightweight 3x3 perspective grid that reveals as auto-capture confidence grows.
+    private let stabilityGridLayer: CAShapeLayer = {
+        let layer = CAShapeLayer()
+        layer.fillColor = UIColor.clear.cgColor
+        layer.lineWidth = 1.0
+        layer.lineCap = .round
+        layer.opacity = 0.0
+        layer.strokeEnd = 0.0
+        layer.isHidden = true
+        return layer
+    }()
+
+    private var scannerOverlayColor: UIColor?
 
     /// We want the corner views to be displayed under the outline of the quadrilateral.
     /// Because of that, we need the quadrilateral to be drawn on a UIView above them.
@@ -46,7 +68,7 @@ final class MDWQuadrilateralView: UIView {
     public var editable = false {
         didSet {
             cornerViews(hidden: !editable)
-            quadLayer.fillColor = editable ? UIColor(white: 0.0, alpha: 0.6).cgColor : UIColor(white: 1.0, alpha: 0.5).cgColor
+            updateFillColor()
             guard let quad = quad else {
                 return
             }
@@ -115,6 +137,7 @@ final class MDWQuadrilateralView: UIView {
         setupCornerViews()
         setupConstraints()
         quadView.layer.addSublayer(quadLayer)
+        quadView.layer.addSublayer(stabilityGridLayer)
     }
 
     private func setupConstraints() {
@@ -137,11 +160,12 @@ final class MDWQuadrilateralView: UIView {
 
     override public func layoutSubviews() {
         super.layoutSubviews()
-        guard quadLayer.frame != bounds else {
+        guard quadLayer.frame != bounds || stabilityGridLayer.frame != bounds else {
             return
         }
 
         quadLayer.frame = bounds
+        stabilityGridLayer.frame = bounds
         if let quad = quad {
             drawQuadrilateral(quad: quad, animated: false)
         }
@@ -156,6 +180,7 @@ final class MDWQuadrilateralView: UIView {
     func drawQuadrilateral(quad: MDWQuadrilateral, animated: Bool) {
         self.quad = quad
         drawQuad(quad, animated: animated)
+        stabilityGridLayer.path = stabilityGridPath(for: quad).cgPath
         if editable {
             cornerViews(hidden: false)
             layoutCornerViews(forQuad: quad)
@@ -181,6 +206,80 @@ final class MDWQuadrilateralView: UIView {
         quadLayer.isHidden = false
     }
 
+    /// Applies the branded appearance used only by the live camera overlay.
+    func configureForDocumentScanning() {
+        let color = Self.scannerAccentColor
+        scannerOverlayColor = color
+        strokeColor = color.cgColor
+        quadLayer.lineWidth = 2.0
+        stabilityGridLayer.strokeColor = color.withAlphaComponent(0.9).cgColor
+        updateFillColor()
+    }
+
+    /// Reveals the perspective grid in step with the actual auto-capture stability counter.
+    func updateAutoScanProgress(_ progress: CGFloat, animated: Bool) {
+        let clampedProgress = min(1.0, max(0.0, progress))
+        guard !editable, quad != nil, clampedProgress > 0 else {
+            stabilityGridLayer.removeAllAnimations()
+            stabilityGridLayer.strokeEnd = 0.0
+            stabilityGridLayer.opacity = 0.0
+            stabilityGridLayer.isHidden = true
+            return
+        }
+
+        let previousProgress = stabilityGridLayer.presentation()?.strokeEnd
+            ?? stabilityGridLayer.strokeEnd
+        stabilityGridLayer.isHidden = false
+        stabilityGridLayer.opacity = 1.0
+        stabilityGridLayer.strokeEnd = clampedProgress
+
+        guard animated else {
+            stabilityGridLayer.removeAnimation(forKey: "strokeEnd")
+            return
+        }
+
+        let animation = CABasicAnimation(keyPath: "strokeEnd")
+        animation.fromValue = previousProgress
+        animation.toValue = clampedProgress
+        animation.duration = 0.12
+        animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        stabilityGridLayer.add(animation, forKey: "strokeEnd")
+    }
+
+    private func updateFillColor() {
+        if editable {
+            quadLayer.fillColor = UIColor(white: 0.0, alpha: 0.6).cgColor
+        } else if let color = scannerOverlayColor {
+            quadLayer.fillColor = color.withAlphaComponent(0.14).cgColor
+        } else {
+            quadLayer.fillColor = UIColor(white: 1.0, alpha: 0.5).cgColor
+        }
+    }
+
+    private func stabilityGridPath(for quad: MDWQuadrilateral) -> UIBezierPath {
+        let path = UIBezierPath()
+        let divisions: [CGFloat] = [1.0 / 3.0, 2.0 / 3.0]
+
+        for fraction in divisions {
+            path.move(to: interpolate(quad.topLeft, quad.topRight, fraction))
+            path.addLine(to: interpolate(quad.bottomLeft, quad.bottomRight, fraction))
+        }
+
+        for fraction in divisions {
+            path.move(to: interpolate(quad.topLeft, quad.bottomLeft, fraction))
+            path.addLine(to: interpolate(quad.topRight, quad.bottomRight, fraction))
+        }
+
+        return path
+    }
+
+    private func interpolate(_ start: CGPoint, _ end: CGPoint, _ fraction: CGFloat) -> CGPoint {
+        return CGPoint(
+            x: start.x + ((end.x - start.x) * fraction),
+            y: start.y + ((end.y - start.y) * fraction)
+        )
+    }
+
     private func layoutCornerViews(forQuad quad: MDWQuadrilateral) {
         topLeftCornerView.center = quad.topLeft
         topRightCornerView.center = quad.topRight
@@ -191,6 +290,9 @@ final class MDWQuadrilateralView: UIView {
     func removeQuadrilateral() {
         quadLayer.path = nil
         quadLayer.isHidden = true
+        stabilityGridLayer.path = nil
+        updateAutoScanProgress(0.0, animated: false)
+        quad = nil
     }
 
     // MARK: - Actions

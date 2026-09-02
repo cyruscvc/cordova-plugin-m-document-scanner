@@ -27,6 +27,13 @@ protocol MDWRectangleDetectionDelegateProtocol: NSObjectProtocol {
     ///   - imageSize: The size of the image the quadrilateral has been detected on.
     func captureSessionManager(_ captureSessionManager: MDWCaptureSessionManager, didDetectQuad quad: MDWQuadrilateral?, _ imageSize: CGSize)
 
+    /// Called as the current quadrilateral approaches the automatic-capture threshold.
+    /// Progress is reset to zero when detection is lost or the quadrilateral moves.
+    func captureSessionManager(
+        _ captureSessionManager: MDWCaptureSessionManager,
+        didUpdateAutoScanProgress progress: CGFloat
+    )
+
     /// Called when a picture with or without a quadrilateral has been captured.
     ///
     /// - Parameters:
@@ -62,11 +69,10 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
     /// Whether the MDWCaptureSessionManager should be detecting quadrilaterals.
     private var isDetecting = true
 
-    /// The number of times no rectangles have been found in a row.
-    private var noRectangleCount = 0
-
-    /// The minimum number of time required by `noRectangleCount` to validate that no rectangles have been found.
-    private let noRectangleThreshold = 3
+    /// Brief Vision misses should pause feedback rather than restarting a valid hold.
+    private var lastDetectedAt: TimeInterval?
+    private var didResetAfterDetectionLoss = false
+    private let detectionLossGraceDuration: TimeInterval = 0.45
 
     // MARK: Life Cycle
 
@@ -223,37 +229,58 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
     private func processRectangle(rectangle: MDWQuadrilateral?, imageSize: CGSize) {
         if let rectangle = rectangle {
 
-            self.noRectangleCount = 0
+            self.lastDetectedAt = ProcessInfo.processInfo.systemUptime
+            self.didResetAfterDetectionLoss = false
             self.rectangleFunnel
-                .add(rectangle, currentlyDisplayedRectangle: self.displayedRectangleResult?.rectangle) { [weak self] result, rectangle in
+                .add(rectangle, currentlyDisplayedRectangle: self.displayedRectangleResult?.rectangle) { [weak self] result, rectangle, progress in
 
                 guard let self = self else {
                     return
                 }
 
                 let shouldAutoScan = (result == .showAndAutoScan)
+                let autoScanEnabled = MDWCaptureSession.current.isAutoScanEnabled
                 self.displayRectangleResult(rectangleResult: MDWRectangleDetectorResult(rectangle: rectangle, imageSize: imageSize))
-                if shouldAutoScan, MDWCaptureSession.current.isAutoScanEnabled, !MDWCaptureSession.current.isEditing {
+                if autoScanEnabled {
+                    self.displayAutoScanProgress(progress)
+                } else {
+                    self.rectangleFunnel.resetAutoScanProgress()
+                    self.displayAutoScanProgress(0.0)
+                }
+                if shouldAutoScan, autoScanEnabled, !MDWCaptureSession.current.isEditing {
                     capturePhoto()
                 }
             }
 
         } else {
+            let now = ProcessInfo.processInfo.systemUptime
+            if self.lastDetectedAt == nil {
+                self.lastDetectedAt = now
+            }
+
+            guard !self.didResetAfterDetectionLoss,
+                  let lastDetectedAt = self.lastDetectedAt,
+                  now - lastDetectedAt >= self.detectionLossGraceDuration else {
+                return
+            }
+
+            self.didResetAfterDetectionLoss = true
+            self.rectangleFunnel.resetAutoScanProgress()
+            self.displayedRectangleResult = nil
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else {
                     return
                 }
-                self.noRectangleCount += 1
-
-                if self.noRectangleCount > self.noRectangleThreshold {
-                    // Reset the currentAutoScanPassCount, so the threshold is restarted the next time a rectangle is found
-                    self.rectangleFunnel.currentAutoScanPassCount = 0
-
-                    // Remove the currently displayed rectangle as no rectangles are being found anymore
-                    self.displayedRectangleResult = nil
-                    self.delegate?.captureSessionManager(self, didDetectQuad: nil, imageSize)
-                }
+                self.delegate?.captureSessionManager(
+                    self,
+                    didUpdateAutoScanProgress: 0.0
+                )
+                self.delegate?.captureSessionManager(
+                    self,
+                    didDetectQuad: nil,
+                    imageSize
+                )
             }
             return
 
@@ -276,6 +303,18 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
         return quad
     }
 
+    private func displayAutoScanProgress(_ progress: CGFloat) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else {
+                return
+            }
+            self.delegate?.captureSessionManager(
+                self,
+                didUpdateAutoScanProgress: progress
+            )
+        }
+    }
+
 }
 
 extension MDWCaptureSessionManager: AVCapturePhotoCaptureDelegate {
@@ -294,7 +333,7 @@ extension MDWCaptureSessionManager: AVCapturePhotoCaptureDelegate {
         }
 
         isDetecting = false
-        rectangleFunnel.currentAutoScanPassCount = 0
+        rectangleFunnel.resetAutoScanProgress()
         delegate?.didStartCapturingPicture(for: self)
 
         if let sampleBuffer = photoSampleBuffer,
@@ -319,7 +358,7 @@ extension MDWCaptureSessionManager: AVCapturePhotoCaptureDelegate {
         }
 
         isDetecting = false
-        rectangleFunnel.currentAutoScanPassCount = 0
+        rectangleFunnel.resetAutoScanProgress()
         delegate?.didStartCapturingPicture(for: self)
 
         if let imageData = photo.fileDataRepresentation() {

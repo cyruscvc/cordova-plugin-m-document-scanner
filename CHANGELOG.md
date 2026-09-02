@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.1
+
+- Make iOS auto-capture stability use real elapsed time instead of an assumed 30 detection frames per second.
+- Tolerate normal Vision corner jitter and brief detection gaps without constantly restarting the stability grid.
+- Keep a fixed stability anchor so gradual camera movement cannot accumulate into a false capture.
+- Keep scanner navigation controls explicitly white on the black bar, fixing the invisible but tappable final Done control in light mode.
+- No Android, JavaScript bridge, OutSystems action, URI, OCR, or result-contract changes.
+
+## 1.2.0
+
+- Use Mubadala teal (`#7AC4BD`) for the iOS live document outline and detected-area overlay.
+- Reveal a lightweight perspective grid as the detected quadrilateral approaches the automatic-capture stability threshold.
+- Reset the grid immediately when the document moves, detection is lost, or automatic capture is disabled.
+- Keep Android on Google ML Kit's native scanner UI; no Android, JavaScript bridge, OutSystems action, or result-contract changes.
+
 ## 1.1.1
 
 - Fixed iOS single-page crop handles not matching the quadrilateral shown during live capture.
