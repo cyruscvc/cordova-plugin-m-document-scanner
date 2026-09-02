@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Fixed iOS single-page crop handles not matching the quadrilateral shown during live capture.
+- Preserved the captured JPEG's EXIF orientation while retaining the 3500-pixel memory cap, preventing a second rotation of the detected corners.
+- No Android, JavaScript bridge, OutSystems action, or result-contract changes.
+
 ## 1.1.0
 
 - Replace the custom iOS single-page camera with a maintained, namespaced WeScan fork.

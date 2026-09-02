@@ -153,9 +153,17 @@ extension UIImage {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
+
+        // Keep the JPEG's EXIF orientation instead of rotating the thumbnail pixels.
+        // CaptureSessionManager maps the live video quadrilateral into the still image
+        // using this orientation. Normalizing it here would rotate the quad a second time.
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let exifOrientation = (properties?[kCGImagePropertyOrientation] as? NSNumber)?.uint32Value ?? 1
+        let imageOrientation = UIImage.Orientation(mdwExifOrientation: exifOrientation)
+
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceCreateThumbnailWithTransform: false,
             kCGImageSourceThumbnailMaxPixelSize: Int(maxDimension),
             kCGImageSourceShouldCacheImmediately: true
         ]
@@ -166,7 +174,30 @@ extension UIImage {
         ) else {
             return nil
         }
-        return UIImage(cgImage: image, scale: 1, orientation: .up)
+        return UIImage(cgImage: image, scale: 1, orientation: imageOrientation)
+    }
+}
+
+private extension UIImage.Orientation {
+    init(mdwExifOrientation value: UInt32) {
+        switch value {
+        case 2:
+            self = .upMirrored
+        case 3:
+            self = .down
+        case 4:
+            self = .downMirrored
+        case 5:
+            self = .leftMirrored
+        case 6:
+            self = .right
+        case 7:
+            self = .rightMirrored
+        case 8:
+            self = .left
+        default:
+            self = .up
+        }
     }
 }
 

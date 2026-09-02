@@ -64,6 +64,20 @@ test('iOS capture is bounded and uses supported photo prioritization', function 
     assert.doesNotMatch(manager, /photoQualityPrioritization\s*=\s*\.quality/);
 });
 
+test('iOS downsampling preserves EXIF orientation for crop-quad mapping', function () {
+    var imageUtils = fs.readFileSync(
+        path.join(weScanRoot, 'Extensions', 'UIImage+Utils.swift'),
+        'utf8'
+    );
+    assert.match(imageUtils, /kCGImageSourceCreateThumbnailWithTransform:\s*false/);
+    assert.match(imageUtils, /kCGImagePropertyOrientation/);
+    assert.match(imageUtils, /UIImage\.Orientation\(mdwExifOrientation:/);
+    assert.doesNotMatch(
+        imageUtils,
+        /return UIImage\(cgImage:\s*image,\s*scale:\s*1,\s*orientation:\s*\.up\)/
+    );
+});
+
 test('iOS gallery and OCR-compatible URI contract remain available', function () {
     assert.match(pluginSource, /UIImagePickerControllerDelegate/);
     assert.match(pluginSource, /mdwPreparedImage\(maxDimension:\s*3500\)/);
