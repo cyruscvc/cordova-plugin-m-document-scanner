@@ -151,7 +151,6 @@ final class MDWCaptureSessionManager: NSObject, AVCaptureVideoDataOutputSampleBu
                 guard let self = self, !self.captureSession.isRunning else { return }
                 self.captureSession.startRunning()
                 DispatchQueue.main.async {
-                    guard let self = self else { return }
                     self.isDetecting = true
                 }
             }
