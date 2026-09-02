@@ -16,14 +16,15 @@ test('MABS controller traversal is explicitly typed as UIViewController', functi
     );
 });
 
-test('single-page scanner uses the supported activity indicator style', function () {
+test('single-page scanner uses deployment-safe activity indicator styles', function () {
     var source = fs.readFileSync(
         path.join(iosRoot, 'MDSinglePageScannerViewController.swift'),
         'utf8'
     );
 
+    assert.match(source, /if #available\(iOS 13\.0, \*\)/);
     assert.match(source, /UIActivityIndicatorView\(style:\s*\.large\)/);
-    assert.doesNotMatch(source, /\.whiteLarge/);
+    assert.match(source, /UIActivityIndicatorView\(style:\s*\.whiteLarge\)/);
 });
 
 test('camera configuration is committed before the capture session starts', function () {
@@ -43,10 +44,4 @@ test('camera configuration is committed before the capture session starts', func
     assert.notEqual(startIndex, -1);
     assert.ok(commitIndex < startIndex, 'commitConfiguration must precede startRunning');
     assert.doesNotMatch(configureCamera, /defer\s*\{[^}]*commitConfiguration/);
-});
-
-test('iOS loading indicator remains compatible with pre-iOS 13 deployment targets', () => {
-  assert.match(scannerSource, /if #available\(iOS 13\.0, \*\)/);
-  assert.match(scannerSource, /UIActivityIndicatorView\(style: \.large\)/);
-  assert.match(scannerSource, /UIActivityIndicatorView\(style: \.whiteLarge\)/);
 });
