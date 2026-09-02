@@ -1,7 +1,9 @@
 /* global cordova */
 
 var exec = require('cordova/exec');
-var optionTools = require('./options');
+var optionTools = require(
+    'cordova-plugin-m-document-scanner.MDocumentScannerOptions'
+);
 
 function callback(value) {
     return typeof value === 'function' ? value : function () {};

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Fix the Cordova startup module reference that could leave the Android app on a blank white screen.
+- Stop auto-running the options helper during application bootstrap.
+- Add a Cordova module-loader regression test for the JavaScript bridge.
+
 ## 1.0.1
 
 - Fix MABS 12 iOS generation by declaring the concrete Swift language version `5`.
