@@ -214,7 +214,7 @@ final class MDocumentScanner: CDVPlugin {
     }
 
     private func topViewController() -> UIViewController {
-        var controller = viewController!
+        var controller: UIViewController = viewController!
         while let presented = controller.presentedViewController {
             controller = presented
         }

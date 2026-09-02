@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- Fix MABS 12 iOS compilation when Cordova exposes the plugin root controller as `CDVViewController`.
+- Explicitly traverse presented controllers as `UIViewController` to avoid the misleading `OS-MABS-GEN-40014` failure.
+- Remove a deprecated iOS activity-indicator style warning.
+
 ## 1.0.2
 
 - Fix the Cordova startup module reference that could leave the Android app on a blank white screen.

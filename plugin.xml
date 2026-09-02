@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-m-document-scanner"
-        version="1.0.2">
+        version="1.0.3">
   <name>MDocumentScanner</name>
   <description>Production document scanning for OutSystems 11 on iOS and Android.</description>
   <license>MIT</license>
