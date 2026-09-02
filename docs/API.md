@@ -10,13 +10,13 @@ Opens exactly one scanner session. A second invocation while the first is active
 |---|---:|---:|---|
 | `captureMode` | Text | `single` | `single` or `multi` |
 | `maxPages` | Integer | `1` / `20` | Forced to 1 for single mode; bounded to 1–50 for multi mode |
-| `allowGallery` | Boolean | `false` | Available in Android ML Kit and the custom iOS single-page scanner |
+| `allowGallery` | Boolean | `false` | Available in Android ML Kit and the WeScan-derived iOS single-page scanner |
 | `resultFormats` | Text list | `jpeg` | One or both of `jpeg`, `pdf` |
 | `jpegQuality` | Decimal | `0.9` | Bounded to 0.35–1.0; used by iOS, while Android ML Kit controls its own JPEG encoding |
 | `scannerMode` | Text | `full` | Android: `base`, `base_with_filter`, or `full`; ignored on iOS |
-| `autoCapture` | Boolean | `true` | Used by the custom iOS single-page scanner |
-| `stabilityDurationMs` | Integer | `1200` | iOS single-page hold time; bounded to 500–5000 ms |
-| `detectionConfidence` | Decimal | `0.8` | iOS rectangle confidence; bounded to 0.5–1.0 |
+| `autoCapture` | Boolean | `true` | Sets the initial Auto/Manual state of the WeScan-derived iOS scanner |
+| `stabilityDurationMs` | Integer | `1200` | Approximate iOS single-page stability window; bounded to 500–5000 ms |
+| `detectionConfidence` | Decimal | `0.8` | Apple Vision rectangle confidence in iOS single-page mode; bounded to 0.5–1.0 |
 | `minDocumentArea` | Decimal | `0.2` | Minimum normalized rectangle area; bounded to 0.08–0.9 |
 
 ### Success and cancellation

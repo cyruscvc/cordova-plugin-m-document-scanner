@@ -2,7 +2,7 @@
 
 `cordova-plugin-m-document-scanner` provides one JavaScript API for production document scanning on iOS and Android.
 
-- **iOS single-page:** a custom AVFoundation + Vision scanner that detects one document, captures it once, applies perspective correction, and stops.
+- **iOS single-page:** a maintained, namespaced WeScan fork using AVFoundation + Apple Vision, with stable auto-capture, manual corner editing, review, enhancement, and a strict one-document flow.
 - **iOS multi-page:** Apple's native VisionKit document camera.
 - **Android:** Google Play services ML Kit Document Scanner with a real page limit, crop/review UI, gallery import, filters, JPEG output, and PDF output.
 
@@ -75,7 +75,7 @@ See [API.md](docs/API.md) for every option, output, error code, and lifecycle ru
 {
   "status": "success",
   "platform": "ios",
-  "engine": "vision-single-page",
+  "engine": "wescan",
   "sessionId": "4a54a63e-dc6a-4fd9-82df-c4d60072040b",
   "pageCount": 1,
   "pages": [
@@ -115,7 +115,7 @@ cordova.plugins.mDocumentScanner.scan(
 
 ## Native behavior differences
 
-- Single-page iOS capture is intentionally custom because VisionKit exposes no supported maximum-page or capture-complete callback.
+- Single-page iOS uses the bundled WeScan-derived flow because VisionKit exposes no supported maximum-page setting. The fork is namespaced and maintained inside this repository.
 - Multi-page iOS uses the exact VisionKit UI. `maxPages` limits the returned pages after the user taps Save; it cannot restrict VisionKit's page-adding UI.
 - Android enforces `maxPages` in the ML Kit UI.
 
@@ -132,4 +132,4 @@ Static validation and Cordova installation do not replace MABS compilation and p
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Bundled WeScan-derived sources remain under the upstream MIT license; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

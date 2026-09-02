@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-m-document-scanner"
-        version="1.0.5">
+        version="1.1.0">
   <name>MDocumentScanner</name>
   <description>Production document scanning for OutSystems 11 on iOS and Android.</description>
   <license>MIT</license>
@@ -46,10 +46,44 @@
       <string>$PHOTOLIBRARY_USAGE_DESCRIPTION</string>
     </config-file>
     <source-file src="src/ios/MDocumentScanner.swift" />
-    <source-file src="src/ios/MDSinglePageScannerViewController.swift" />
+    <source-file src="src/ios/MDWeScan/Common/CIRectangleDetector.swift" />
+    <source-file src="src/ios/MDWeScan/Common/EditScanCornerView.swift" />
+    <source-file src="src/ios/MDWeScan/Common/Error.swift" />
+    <source-file src="src/ios/MDWeScan/Common/Quadrilateral.swift" />
+    <source-file src="src/ios/MDWeScan/Common/QuadrilateralView.swift" />
+    <source-file src="src/ios/MDWeScan/Common/VisionRectangleDetector.swift" />
+    <source-file src="src/ios/MDWeScan/Edit/EditImageViewController.swift" />
+    <source-file src="src/ios/MDWeScan/Edit/EditScanViewController.swift" />
+    <source-file src="src/ios/MDWeScan/Edit/ZoomGestureController.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/AVCaptureVideoOrientation+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/Array+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/CGAffineTransform+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/CGImagePropertyOrientation.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/CGPoint+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/CGRect+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/CGSize+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/CIImage+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/UIImage+Orientation.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/UIImage+SFSymbol.swift" />
+    <source-file src="src/ios/MDWeScan/Extensions/UIImage+Utils.swift" />
+    <source-file src="src/ios/MDWeScan/ImageScannerController.swift" />
+    <source-file src="src/ios/MDWeScan/Protocols/CaptureDevice.swift" />
+    <source-file src="src/ios/MDWeScan/Protocols/Transformable.swift" />
+    <source-file src="src/ios/MDWeScan/Review/ReviewViewController.swift" />
+    <source-file src="src/ios/MDWeScan/Scan/CameraScannerViewController.swift" />
+    <source-file src="src/ios/MDWeScan/Scan/CaptureSessionManager.swift" />
+    <source-file src="src/ios/MDWeScan/Scan/FocusRectangleView.swift" />
+    <source-file src="src/ios/MDWeScan/Scan/RectangleFeaturesFunnel.swift" />
+    <source-file src="src/ios/MDWeScan/Scan/ScannerViewController.swift" />
+    <source-file src="src/ios/MDWeScan/Scan/ShutterButton.swift" />
+    <source-file src="src/ios/MDWeScan/Session/CaptureSession+Flash.swift" />
+    <source-file src="src/ios/MDWeScan/Session/CaptureSession+Focus.swift" />
+    <source-file src="src/ios/MDWeScan/Session/CaptureSession+Orientation.swift" />
+    <source-file src="src/ios/MDWeScan/Session/CaptureSession.swift" />
     <source-file src="src/ios/MDScannerFileStore.swift" />
     <framework src="AVFoundation.framework" />
     <framework src="CoreImage.framework" />
+    <framework src="CoreMotion.framework" />
     <framework src="Vision.framework" />
     <framework src="VisionKit.framework" weak="true" />
   </platform>
