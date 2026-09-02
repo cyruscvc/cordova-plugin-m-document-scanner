@@ -16,12 +16,14 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -33,6 +35,8 @@ public final class MDocumentScanner extends CordovaPlugin {
     private static final int MINIMUM_API_LEVEL = 21;
     private static final long MINIMUM_RAM_BYTES = 1700L * 1024L * 1024L;
     private static final String CACHE_DIRECTORY = "m-document-scanner";
+    private static final int DEFAULT_MAX_READ_BYTES = 25 * 1024 * 1024;
+    private static final int MAX_READ_BYTES = 50 * 1024 * 1024;
 
     private final Object stateLock = new Object();
     private CallbackContext pendingCallback;
@@ -49,6 +53,9 @@ public final class MDocumentScanner extends CordovaPlugin {
                 return true;
             case "cleanup":
                 cleanup(args.optJSONObject(0), callbackContext);
+                return true;
+            case "readFile":
+                readFile(args.optJSONObject(0), callbackContext);
                 return true;
             default:
                 return false;
@@ -225,6 +232,8 @@ public final class MDocumentScanner extends CordovaPlugin {
             result.put("galleryImport", true);
             result.put("jpegOutput", true);
             result.put("pdfOutput", true);
+            result.put("fileRead", true);
+            result.put("maxReadBytes", MAX_READ_BYTES);
             result.put("uiPageLimitEnforced", true);
             result.put("minimumApiLevel", MINIMUM_API_LEVEL);
             result.put("minimumRamMb", 1700);
@@ -278,6 +287,79 @@ public final class MDocumentScanner extends CordovaPlugin {
                 // Integer values are JSON-safe.
             }
             callbackContext.success(result);
+        });
+    }
+
+    private void readFile(JSONObject rawOptions, CallbackContext callbackContext) {
+        JSONObject options = rawOptions == null ? new JSONObject() : rawOptions;
+        String uriText = options.optString("uri", "").trim();
+        int maxBytes = Math.max(
+                1,
+                Math.min(MAX_READ_BYTES, options.optInt("maxBytes", DEFAULT_MAX_READ_BYTES))
+        );
+        if (uriText.isEmpty()) {
+            sendError(callbackContext, "INVALID_OPTIONS", "uri is required.", null);
+            return;
+        }
+
+        cordova.getThreadPool().execute(() -> {
+            try {
+                Uri uri = Uri.parse(uriText);
+                if (!"file".equalsIgnoreCase(uri.getScheme()) || uri.getPath() == null) {
+                    throw new ScannerFileReadException(
+                            "INVALID_OPTIONS",
+                            "The scanner file URI is invalid."
+                    );
+                }
+
+                File root = cacheRoot().getCanonicalFile();
+                File file = new File(uri.getPath()).getCanonicalFile();
+                String rootPrefix = root.getPath() + File.separator;
+                if (!file.getPath().startsWith(rootPrefix)) {
+                    throw new ScannerFileReadException(
+                            "FILE_ACCESS_DENIED",
+                            "The requested file is outside the scanner cache."
+                    );
+                }
+                if (!file.isFile()) {
+                    throw new ScannerFileReadException(
+                            "FILE_NOT_FOUND",
+                            "The scanner file no longer exists."
+                    );
+                }
+
+                long length = file.length();
+                if (length > maxBytes || length > Integer.MAX_VALUE) {
+                    throw new ScannerFileReadException(
+                            "FILE_TOO_LARGE",
+                            "The scanner file exceeds the requested maximum size."
+                    );
+                }
+
+                byte[] data = new byte[(int) length];
+                try (FileInputStream input = new FileInputStream(file)) {
+                    int offset = 0;
+                    while (offset < data.length) {
+                        int count = input.read(data, offset, data.length - offset);
+                        if (count < 0) {
+                            throw new IOException("Unexpected end of scanner file.");
+                        }
+                        offset += count;
+                    }
+                }
+
+                PluginResult result = new PluginResult(PluginResult.Status.OK, data);
+                callbackContext.sendPluginResult(result);
+            } catch (ScannerFileReadException exception) {
+                sendError(callbackContext, exception.code, exception.getMessage(), exception);
+            } catch (IOException | SecurityException exception) {
+                sendError(
+                        callbackContext,
+                        "FILE_READ_FAILED",
+                        safeMessage(exception),
+                        exception
+                );
+            }
         });
     }
 
@@ -410,6 +492,15 @@ public final class MDocumentScanner extends CordovaPlugin {
         return message == null || message.trim().isEmpty()
                 ? exception.getClass().getSimpleName()
                 : message;
+    }
+
+    private static final class ScannerFileReadException extends IOException {
+        final String code;
+
+        ScannerFileReadException(String code, String message) {
+            super(message);
+            this.code = code;
+        }
     }
 
     private static final class ScanOptions {

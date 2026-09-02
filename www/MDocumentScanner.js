@@ -43,8 +43,38 @@ function cleanup(options, onSuccess, onError) {
     exec(callback(onSuccess), callback(onError), 'MDocumentScanner', 'cleanup', [normalized]);
 }
 
+function readFile(options, onSuccess, onError) {
+    var source = typeof options === 'string' ? { uri: options } : (options || {});
+    var uri = typeof source.uri === 'string' ? source.uri.trim() : '';
+    var maxBytes = source.maxBytes == null ? 25 * 1024 * 1024 : Number(source.maxBytes);
+
+    if (!uri) {
+        callback(onError)({
+            code: 'INVALID_OPTIONS',
+            message: 'uri is required.'
+        });
+        return;
+    }
+    if (!Number.isFinite(maxBytes) || maxBytes < 1 || maxBytes > 50 * 1024 * 1024) {
+        callback(onError)({
+            code: 'INVALID_OPTIONS',
+            message: 'maxBytes must be between 1 and 52428800.'
+        });
+        return;
+    }
+
+    exec(
+        callback(onSuccess),
+        callback(onError),
+        'MDocumentScanner',
+        'readFile',
+        [{ uri: uri, maxBytes: Math.floor(maxBytes) }]
+    );
+}
+
 module.exports = {
     scan: scan,
     getCapabilities: getCapabilities,
-    cleanup: cleanup
+    cleanup: cleanup,
+    readFile: readFile
 };

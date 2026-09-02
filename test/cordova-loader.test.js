@@ -40,6 +40,7 @@ test('Cordova can load the clobbered scanner bridge at application startup', fun
     assert.equal(typeof bridgeModule.exports.scan, 'function');
     assert.equal(typeof bridgeModule.exports.getCapabilities, 'function');
     assert.equal(typeof bridgeModule.exports.cleanup, 'function');
+    assert.equal(typeof bridgeModule.exports.readFile, 'function');
 });
 
 test('the options helper is registered without an automatic runs directive', function () {

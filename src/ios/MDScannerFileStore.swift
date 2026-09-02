@@ -5,6 +5,28 @@ enum MDScannerFileStoreError: LocalizedError {
     case cacheUnavailable
     case jpegEncodingFailed
     case invalidSessionIdentifier
+    case invalidFileURI
+    case fileAccessDenied
+    case fileNotFound
+    case fileTooLarge
+    case fileReadFailed
+
+    var code: String {
+        switch self {
+        case .invalidFileURI:
+            return "INVALID_OPTIONS"
+        case .fileAccessDenied:
+            return "FILE_ACCESS_DENIED"
+        case .fileNotFound:
+            return "FILE_NOT_FOUND"
+        case .fileTooLarge:
+            return "FILE_TOO_LARGE"
+        case .fileReadFailed:
+            return "FILE_READ_FAILED"
+        default:
+            return "FILE_READ_FAILED"
+        }
+    }
 
     var errorDescription: String? {
         switch self {
@@ -14,6 +36,16 @@ enum MDScannerFileStoreError: LocalizedError {
             return "Unable to encode a scanned page as JPEG."
         case .invalidSessionIdentifier:
             return "The scanner session identifier is invalid."
+        case .invalidFileURI:
+            return "The scanner file URI is invalid."
+        case .fileAccessDenied:
+            return "The requested file is outside the scanner cache."
+        case .fileNotFound:
+            return "The scanner file no longer exists."
+        case .fileTooLarge:
+            return "The scanner file exceeds the requested maximum size."
+        case .fileReadFailed:
+            return "The scanner file could not be read."
         }
     }
 }
@@ -113,6 +145,37 @@ final class MDScannerFileStore {
             }
         }
         return deleted
+    }
+
+    func readFile(uri: String, maxBytes: Int) throws -> Data {
+        guard let requestedURL = URL(string: uri), requestedURL.isFileURL else {
+            throw MDScannerFileStoreError.invalidFileURI
+        }
+
+        let root = try cacheRoot().standardizedFileURL.resolvingSymlinksInPath()
+        let file = requestedURL.standardizedFileURL.resolvingSymlinksInPath()
+        let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+        guard file.path.hasPrefix(rootPrefix) else {
+            throw MDScannerFileStoreError.fileAccessDenied
+        }
+
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: file.path, isDirectory: &isDirectory),
+              !isDirectory.boolValue else {
+            throw MDScannerFileStoreError.fileNotFound
+        }
+
+        let attributes = try fileManager.attributesOfItem(atPath: file.path)
+        let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
+        guard size <= maxBytes else {
+            throw MDScannerFileStoreError.fileTooLarge
+        }
+
+        do {
+            return try Data(contentsOf: file, options: .mappedIfSafe)
+        } catch {
+            throw MDScannerFileStoreError.fileReadFailed
+        }
     }
 
     private func cacheRoot() throws -> URL {

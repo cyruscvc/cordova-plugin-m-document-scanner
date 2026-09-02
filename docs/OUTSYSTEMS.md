@@ -95,7 +95,34 @@ Inputs: `SessionId` (Text), `MaxAgeHours` (Integer). Outputs: `IsSuccess`, `Dele
 
 Call cleanup only after all OCR, upload, preview, or parsing work is complete.
 
-## 6. Deserialize the result
+## 6. Read a scanner URI as Binary Data or Base64
+
+Create a public asynchronous Client Action named `ReadScannerFile` and paste [outsystems/ReadScannerFile.js](../outsystems/ReadScannerFile.js) into its JavaScript node.
+
+### Inputs
+
+| Input | Type | Suggested default |
+|---|---|---|
+| `Uri` | Text | mandatory |
+| `IncludeBase64` | Boolean | `False` |
+| `MaxBytes` | Integer | `26214400` |
+
+### Outputs
+
+| Output | Type |
+|---|---|
+| `IsSuccess` | Boolean |
+| `BinaryData` | Binary Data |
+| `Base64` | Text |
+| `MimeType` | Text |
+| `FileName` | Text |
+| `Size` | Integer |
+| `ErrorCode` | Text |
+| `ErrorMessage` | Text |
+
+Pass `Pages[0].Uri` for a JPEG or `Pdf.Uri` for a PDF. Keep `IncludeBase64 = False` unless a downstream API explicitly requires Base64; Base64 increases payload size and memory use. The native read is restricted to scanner-owned cache files and has a 50 MB hard maximum.
+
+## 7. Deserialize the result
 
 Import [outsystems/scan-result.sample.json](../outsystems/scan-result.sample.json) into an OutSystems Structure, or create these structures manually:
 
@@ -105,7 +132,7 @@ Import [outsystems/scan-result.sample.json](../outsystems/scan-result.sample.jso
 
 Cancellation returns `Status = "cancelled"`, an empty Pages list, and no error.
 
-## 7. Connect the existing receipt OCR plugin
+## 8. Connect the existing receipt OCR plugin
 
 For a successful single-page scan:
 
@@ -117,7 +144,7 @@ For a successful single-page scan:
 
 Do not convert the scanner URI to Base64 first; that increases memory pressure and bridge payload size.
 
-## 8. Publish and rebuild
+## 9. Publish and rebuild
 
 1. Publish the wrapper.
 2. Refresh the wrapper dependency in the consuming mobile app.

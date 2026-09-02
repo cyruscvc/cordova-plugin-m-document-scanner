@@ -94,6 +94,12 @@ See [API.md](docs/API.md) for every option, output, error code, and lifecycle ru
 
 Images and PDFs are returned as cache-backed file URIs rather than Base64. Process or upload them promptly, then call `cleanup`. Mobile operating systems may purge cache files under storage pressure.
 
+## Reading a result as OutSystems Binary Data
+
+The scanner returns cache-backed URIs to avoid large Cordova bridge payloads. When an OutSystems flow specifically needs Binary Data or Base64, use the included `ReadScannerFile` wrapper action with `Pages[0].Uri` or `Pdf.Uri`.
+
+Binary Data is always returned. Base64 is optional because it increases the payload by roughly one third and creates additional memory pressure. The native reader only accepts files inside this scanner's cache and refuses files larger than 50 MB.
+
 ## Using the existing receipt OCR plugin
 
 Keep capture and OCR as separate steps:

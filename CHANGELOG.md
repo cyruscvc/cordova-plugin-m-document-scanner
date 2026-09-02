@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- Added a secure `readFile` Cordova operation for scanner-owned JPEG and PDF cache URIs.
+- Added the OutSystems `ReadScannerFile` client action wiring for Binary Data and optional Base64 output.
+- Added MIME type, filename, byte-size, maximum-size, missing-file, and access-denied handling.
+- Restricted native reads to this plugin's cache directory and capped reads at 50 MB.
+- Preserved the existing scan, cleanup, OCR, URI, iOS, and Android contracts.
+
 ## 1.1.1
 
 - Fixed iOS single-page crop handles not matching the quadrilateral shown during live capture.

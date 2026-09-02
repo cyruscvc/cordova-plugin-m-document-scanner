@@ -166,6 +166,8 @@ final class MDocumentScanner: CDVPlugin {
             "galleryImport": true,
             "jpegOutput": true,
             "pdfOutput": true,
+            "fileRead": true,
+            "maxReadBytes": 52_428_800,
             "uiPageLimitEnforced": ["single": true, "multi": false],
             "minimumIosVersion": "13.0"
         ]
@@ -189,6 +191,33 @@ final class MDocumentScanner: CDVPlugin {
                 self?.sendSuccess(["deletedSessions": deleted], callbackId: command.callbackId)
             } catch {
                 self?.sendError(error, code: "CLEANUP_FAILED", callbackId: command.callbackId)
+            }
+        })
+    }
+
+    @objc(readFile:)
+    func readFile(_ command: CDVInvokedUrlCommand) {
+        let options = command.argument(at: 0) as? [String: Any] ?? [:]
+        let uri = options["uri"] as? String ?? ""
+        let maxBytes = min(
+            52_428_800,
+            max(1, (options["maxBytes"] as? NSNumber)?.intValue ?? 26_214_400)
+        )
+
+        commandDelegate.run(inBackground: { [weak self] in
+            do {
+                let data = try MDScannerFileStore.shared.readFile(
+                    uri: uri,
+                    maxBytes: maxBytes
+                )
+                let result = CDVPluginResult(
+                    status: CDVCommandStatus_OK,
+                    messageAsArrayBuffer: data
+                )
+                self?.commandDelegate.send(result, callbackId: command.callbackId)
+            } catch {
+                let code = (error as? MDScannerFileStoreError)?.code ?? "FILE_READ_FAILED"
+                self?.sendError(error, code: code, callbackId: command.callbackId)
             }
         })
     }

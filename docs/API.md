@@ -40,6 +40,26 @@ Errors are objects with `code`, `message`, and optionally `nativeType`.
 | `EMPTY_RESULT` | Native scanner completed without a readable result |
 | `FILE_WRITE_FAILED` | Cache-backed JPEG/PDF output could not be created |
 | `CLEANUP_FAILED` | Cache cleanup failed |
+| `FILE_ACCESS_DENIED` | URI points outside this scanner plugin's cache |
+| `FILE_NOT_FOUND` | Scanner cache file was removed or purged |
+| `FILE_TOO_LARGE` | File exceeds the requested or platform maximum |
+| `FILE_READ_FAILED` | Native file reading failed |
+
+## `readFile(options, success, error)`
+
+Reads a JPEG or PDF previously returned by this plugin and returns an `ArrayBuffer` to JavaScript.
+
+```javascript
+cordova.plugins.mDocumentScanner.readFile(
+  { uri: result.pages[0].uri, maxBytes: 25 * 1024 * 1024 },
+  function (arrayBuffer) {
+    console.log(arrayBuffer.byteLength);
+  },
+  onError
+);
+```
+
+Only `file://` URIs inside the plugin's own `m-document-scanner` cache are accepted. The default limit is 25 MB and the hard maximum is 50 MB. Read the file before calling `cleanup`.
 
 ## `getCapabilities(success, error)`
 
